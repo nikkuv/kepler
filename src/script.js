@@ -1,14 +1,8 @@
-
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import GUI from 'lil-gui'
-
+import gsap from 'gsap'
 /**
  * Base
  */
-// Debug
-// const gui = new GUI()
-
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -34,15 +28,19 @@ const material = new THREE.MeshStandardMaterial({
 // Mesh
 const geometry = new THREE.SphereGeometry(1, 64, 64);
 const sphere = new THREE.Mesh(geometry, material)
+sphere.position.x = 1
+sphere.position.y = 0
+sphere.position.z = -1
 scene.add(sphere)
 
+
 // Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+const ambientLight = new THREE.AmbientLight(0x404040,3);
 scene.add(ambientLight);
 
-const pointLight = new THREE.PointLight(0xffffff, 1);
-pointLight.position.set(5, 5, 5);
-scene.add(pointLight);
+const directionalLight = new THREE.DirectionalLight(0x80ff80, 3);
+directionalLight.position.set(-5,2,3);
+scene.add(directionalLight);
 
 /**
  * Sizes
@@ -71,37 +69,91 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = 1
-camera.position.y = 1
-camera.position.z = 2
+const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
+camera.position.z = 3
 scene.add(camera)
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
 
 /**
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
+    canvas: canvas,
+    alpha: true
 })
 renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+// shpere position
+const arr = [
+    {
+        id: 'first',
+        x: 1,
+        y: 0,
+        z: -1
+    },
+    {
+        id: 'second',
+        x: -1,
+        y: 0,
+        z: -1
+    },
+    {
+        id: 'third',
+        x: 0,
+        y: -1.25,
+        z: 1
+    }
+]
+
+const movePlanet = () => {
+    const sections = document.querySelectorAll('.section');
+    let currentSection = 0;
+
+    sections.forEach((section) => {  
+        const rect = section.getBoundingClientRect();
+        if(rect.top <= window.innerHeight / 3) {
+            currentSection = section.id;
+        }
+    });
+
+    let active = arr.find((el) => el.id === currentSection);
+    if(active){
+        // Replace direct position updates with GSAP animatio
+        gsap.to(sphere.position, {
+            x: active.x,
+            y: active.y,
+            z: active.z,
+            duration: 3,
+            ease: "power1.out"
+        });
+    }
+}
+
+/**
+ * Scroll 
+ */
+window.addEventListener('scroll', () => {
+    movePlanet();
+})
+
 
 /**
  * Animate
  */
-function animate() {
-    requestAnimationFrame(animate);
+const clock = new THREE.Clock()
+
+const tick = () =>
+{
+    const elapsedTime = clock.getElapsedTime()
 
     // Rotate the sphere
     sphere.rotation.y += 0.003;
 
-    // Render the scene
-    renderer.render(scene, camera);
+    // Render
+    renderer.render(scene, camera)
+
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
 }
 
-// Start the animation loop
-animate();
+tick()
